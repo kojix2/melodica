@@ -2,6 +2,8 @@
 
 Minimal rhythm game prototype using `uing` for UI and `raudio` for audio.
 
+![MISS!](assets/screenshot.png)
+
 ## Usage
 
 1. Install shards and dependencies.
