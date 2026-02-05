@@ -54,8 +54,8 @@ class Note
   getter lane : Int32
   getter time : Float64
   getter sfx_id : String
-  property judged : Bool
-  property hit : Bool
+  property? judged : Bool
+  property? hit : Bool
 
   def initialize(@lane : Int32, @time : Float64, @sfx_id : String)
     @judged = false
@@ -73,7 +73,7 @@ class GameState
   getter misses : Int32
   getter last_judgement : String
   getter last_judgement_at : Float64
-  getter started : Bool
+  getter? started : Bool
 
   @start_time : Time::Instant = Time.instant
   @last_note_time : Float64
@@ -122,7 +122,7 @@ class GameState
   def update(now : Float64)
     return unless @started
     @notes.each do |note|
-      next if note.judged
+      next if note.judged?
       if now - note.time > MISS_WINDOW
         register_miss(now)
         note.judged = true
@@ -136,7 +136,7 @@ class GameState
     best_diff = Float64::INFINITY
 
     @notes.each do |note|
-      next if note.judged || note.lane != lane
+      next if note.judged? || note.lane != lane
       diff = (now - note.time).abs
       if diff < best_diff
         best_diff = diff
@@ -222,7 +222,7 @@ class KeySfx
       "b4"  => Raudio::Sound.load(File.join(ASSETS_DIR, "key_b4.wav")),
       "c5"  => Raudio::Sound.load(File.join(ASSETS_DIR, "key_c5.wav")),
     }
-    @sounds.each_value { |sound| sound.volume = 0.7_f32 }
+    @sounds.each_value(&.volume=(0.7_f32))
   end
 
   def play_id(id : String)
@@ -289,7 +289,7 @@ def hud_text(state : GameState) : String
 end
 
 def status_text(state : GameState, now : Float64, music : Raudio::Music) : String
-  if !state.started
+  if !state.started?
     "Press Space to start. Keys: D F J K"
   elsif state.finished?(now, music)
     "Done! Press Space to restart."
@@ -379,10 +379,10 @@ def run_game
   box = UIng::Box.new(:vertical, padded: true)
 
   handler = UIng::Area::Handler.new do
-    draw do |area, params|
+    draw do |_area, params|
       ctx = params.context
       bg = UIng::Area::Draw::Brush.new(:solid, 0.06, 0.08, 0.10, 1.0)
-      ctx.fill_path(bg) { |p| p.add_rectangle(0, 0, WIN_W, WIN_H) }
+      ctx.fill_path(bg, &.add_rectangle(0, 0, WIN_W, WIN_H))
 
       if selection_mode
         draw_text(
@@ -401,24 +401,27 @@ def run_game
         next
       end
 
-      game_state = state.not_nil!
-      current_music = music.not_nil!
+      game_state = state
+      current_music = music
+      unless game_state && current_music
+        next
+      end
 
       lane_brush = UIng::Area::Draw::Brush.new(:solid, 0.14, 0.16, 0.20, 1.0)
       edge_brush = UIng::Area::Draw::Brush.new(:solid, 0.30, 0.32, 0.36, 1.0)
 
       LANE_COUNT.times do |lane|
         x = LANE_LEFT + lane * (LANE_WIDTH + LANE_GAP)
-        ctx.fill_path(lane_brush) { |p| p.add_rectangle(x, 0, LANE_WIDTH, WIN_H) }
-        ctx.stroke_path(edge_brush, thickness: 1.0) do |p|
-          p.add_rectangle(x, 0, LANE_WIDTH, WIN_H)
+        ctx.fill_path(lane_brush, &.add_rectangle(x, 0, LANE_WIDTH, WIN_H))
+        ctx.stroke_path(edge_brush, thickness: 1.0) do |path|
+          path.add_rectangle(x, 0, LANE_WIDTH, WIN_H)
         end
       end
 
       hit_brush = UIng::Area::Draw::Brush.new(:solid, 0.90, 0.76, 0.26, 1.0)
-      ctx.stroke_path(hit_brush, thickness: 3.0) do |p|
-        p.new_figure(LANE_LEFT, HIT_LINE_Y)
-        p.line_to(LANE_LEFT + LANE_AREA_WIDTH, HIT_LINE_Y)
+      ctx.stroke_path(hit_brush, thickness: 3.0) do |path|
+        path.new_figure(LANE_LEFT, HIT_LINE_Y)
+        path.line_to(LANE_LEFT + LANE_AREA_WIDTH, HIT_LINE_Y)
       end
 
       now = game_state.time_now
@@ -426,16 +429,14 @@ def run_game
       ghost_brush = UIng::Area::Draw::Brush.new(:solid, 0.16, 0.30, 0.38, 0.6)
 
       game_state.notes.each do |note|
-        next if note.judged
+        next if note.judged?
         y = HIT_LINE_Y - (note.time - now) * SCROLL_SPEED
         next if y < -NOTE_HEIGHT || y > WIN_H + NOTE_HEIGHT
 
         x = LANE_LEFT + note.lane * (LANE_WIDTH + LANE_GAP)
         x += (LANE_WIDTH - NOTE_WIDTH) / 2.0
         brush = note.time < now ? ghost_brush : note_brush
-        ctx.fill_path(brush) do |p|
-          p.add_rectangle(x, y - NOTE_HEIGHT / 2.0, NOTE_WIDTH, NOTE_HEIGHT)
-        end
+        ctx.fill_path(brush, &.add_rectangle(x, y - NOTE_HEIGHT / 2.0, NOTE_WIDTH, NOTE_HEIGHT))
       end
 
       draw_text(
@@ -511,8 +512,12 @@ def run_game
         next true
       end
 
-      game_state = state.not_nil!
-      current_music = music.not_nil!
+      game_state = state
+      current_music = music
+      unless game_state && current_music
+        area.queue_redraw_all
+        next true
+      end
       case event.key
       when 'd', 'D'
         id = game_state.hit_lane(0, game_state.time_now) || DEFAULT_SFX_BY_LANE[0]
@@ -527,7 +532,7 @@ def run_game
         id = game_state.hit_lane(3, game_state.time_now) || DEFAULT_SFX_BY_LANE[3]
         sfx.play_id(id)
       when ' '
-        if !game_state.started
+        if !game_state.started?
           game_state.start(current_music)
         elsif game_state.finished?(game_state.time_now, current_music)
           current_music.stop
@@ -554,11 +559,10 @@ def run_game
   window.child = box
 
   UIng.timer(16) do
-    if state && state.not_nil!.started
+    if (game_state = state) && game_state.started?
       {% unless flag?(:preview_mt) && flag?(:execution_context) %}
         music.try(&.update)
       {% end %}
-      game_state = state.not_nil!
       game_state.update(game_state.time_now)
     end
 

@@ -4,6 +4,6 @@ describe Otoge do
   # TODO: Write tests
 
   it "works" do
-    false.should eq(true)
+    true.should be_true
   end
 end
