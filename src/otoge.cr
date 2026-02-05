@@ -22,7 +22,7 @@ MISS_WINDOW    = 0.18
 
 LANE_KEYS           = ['D', 'F', 'J', 'K']
 DEFAULT_SFX_BY_LANE = ["c4", "e4", "g4", "c5"]
-MENU_KEYS_MAX = 26
+MENU_KEYS_MAX       = 26
 
 ASSETS_DIR = File.expand_path("../assets", __DIR__)
 
@@ -515,13 +515,17 @@ def run_game
       current_music = music.not_nil!
       case event.key
       when 'd', 'D'
-        game_state.hit_lane(0, game_state.time_now).try { |id| sfx.play_id(id) }
+        id = game_state.hit_lane(0, game_state.time_now) || DEFAULT_SFX_BY_LANE[0]
+        sfx.play_id(id)
       when 'f', 'F'
-        game_state.hit_lane(1, game_state.time_now).try { |id| sfx.play_id(id) }
+        id = game_state.hit_lane(1, game_state.time_now) || DEFAULT_SFX_BY_LANE[1]
+        sfx.play_id(id)
       when 'j', 'J'
-        game_state.hit_lane(2, game_state.time_now).try { |id| sfx.play_id(id) }
+        id = game_state.hit_lane(2, game_state.time_now) || DEFAULT_SFX_BY_LANE[2]
+        sfx.play_id(id)
       when 'k', 'K'
-        game_state.hit_lane(3, game_state.time_now).try { |id| sfx.play_id(id) }
+        id = game_state.hit_lane(3, game_state.time_now) || DEFAULT_SFX_BY_LANE[3]
+        sfx.play_id(id)
       when ' '
         if !game_state.started
           game_state.start(current_music)
