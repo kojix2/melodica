@@ -1,0 +1,24 @@
+{
+  "songs": [
+    {
+      "title": "Warmup 120",
+      "audio": "metronome.wav",
+      "chart": "charts/warmup.json"
+    },
+    {
+      "title": "Pulse 150",
+      "audio": "metronome_fast.wav",
+      "chart": "charts/pulse.json"
+    },
+    {
+      "title": "Drift 90",
+      "audio": "metronome_slow.wav",
+      "chart": "charts/drift.json"
+    },
+    {
+      "title": "Cheerful 120",
+      "audio": "cheerful.wav",
+      "chart": "charts/cheerful.json"
+    }
+  ]
+}
