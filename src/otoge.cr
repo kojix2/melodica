@@ -590,10 +590,14 @@ def run_game
 end
 
 {% if flag?(:preview_mt) && flag?(:execution_context) %}
-  gui_context = Fiber::ExecutionContext::Isolated.new("ui") do
+  {% if flag?(:darwin) %}
     run_game
-  end
-  gui_context.wait
+  {% else %}
+    gui_context = Fiber::ExecutionContext::Isolated.new("ui") do
+      run_game
+    end
+    gui_context.wait
+  {% end %}
 {% else %}
   run_game
 {% end %}
