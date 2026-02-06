@@ -170,8 +170,8 @@ def main():
         "--octaves",
         type=int,
         nargs="+",
-        default=[4, 5],
-        help="Octaves to generate (default: 4 5)",
+        default=[3, 4, 5],
+        help="Octaves to generate (default: 3 4 5)",
     )
     parser.add_argument(
         "--duration",

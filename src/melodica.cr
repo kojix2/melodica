@@ -1,5 +1,6 @@
 require "uing"
 require "raudio"
+require "json"
 
 WIN_W = 800
 WIN_H = 600
@@ -7,12 +8,13 @@ WIN_H = 600
 KEYBOARD_HEIGHT = WIN_H / 3.0
 VISUAL_HEIGHT   = WIN_H - KEYBOARD_HEIGHT
 
-WHITE_KEY_COUNT = 15
-WHITE_KEY_WIDTH = WIN_W.to_f / WHITE_KEY_COUNT
-BLACK_KEY_WIDTH = WHITE_KEY_WIDTH * 0.6
+WHITE_KEY_COUNT  = 15
+WHITE_KEY_WIDTH  = WIN_W.to_f / WHITE_KEY_COUNT
+BLACK_KEY_WIDTH  = WHITE_KEY_WIDTH * 0.6
 BLACK_KEY_HEIGHT = KEYBOARD_HEIGHT * 0.6
 
 ASSETS_DIR = File.expand_path("../assets", __DIR__)
+SCORES_DIR = File.join(ASSETS_DIR, "scores")
 
 INFO_FONT = UIng::FontDescriptor.new(
   family: "Arial",
@@ -22,33 +24,40 @@ INFO_FONT = UIng::FontDescriptor.new(
   stretch: :normal
 )
 
-# Each note: {key_name, white_key_index, is_black, sfx_id, hue}
-# White keys: C4, D4, E4, F4, G4, A4, B4, C5, D5, E5, F5, G5, A5, B5, C6
-# Black keys: C#4, D#4, F#4, G#4, A#4, C#5, D#5, F#5, G#5, A#5
+# 2-octave layout (C3-C5): standard virtual piano mapping
+# Z row = lower octave white keys, A-row between = lower octave black keys
+# Q row = upper octave white keys, number row = upper octave black keys
 NOTE_DATA = {
-  # White keys (lower row keyboard: A S D F G H J K L ; ' \ and more)
-  'a' => {index: 0, black: false, sfx: "c4", hue: 0.0},        # C4
-  's' => {index: 1, black: false, sfx: "d4", hue: 0.08},       # D4
-  'd' => {index: 2, black: false, sfx: "e4", hue: 0.16},       # E4
-  'f' => {index: 3, black: false, sfx: "f4", hue: 0.24},       # F4
-  'g' => {index: 4, black: false, sfx: "g4", hue: 0.32},       # G4
-  'h' => {index: 5, black: false, sfx: "a4", hue: 0.40},       # A4
-  'j' => {index: 6, black: false, sfx: "b4", hue: 0.48},       # B4
-  'k' => {index: 7, black: false, sfx: "c5", hue: 0.56},       # C5
-  'l' => {index: 8, black: false, sfx: "d5", hue: 0.64},       # D5 (placeholder, may not have sound)
-  ';' => {index: 9, black: false, sfx: "e5", hue: 0.72},       # E5
-  # Black keys (upper row keyboard: W E T Y U I O P)
-  'w' => {index: 0, black: true, sfx: "cs4", hue: 0.04},       # C#4
-  'e' => {index: 1, black: true, sfx: "ds4", hue: 0.12},       # D#4
-  't' => {index: 3, black: true, sfx: "fs4", hue: 0.28},       # F#4
-  'y' => {index: 4, black: true, sfx: "gs4", hue: 0.36},       # G#4
-  'u' => {index: 5, black: true, sfx: "as4", hue: 0.44},       # A#4
-  'o' => {index: 7, black: true, sfx: "cs5", hue: 0.60},       # C#5 (placeholder)
-  'p' => {index: 8, black: true, sfx: "ds5", hue: 0.68},       # D#5 (placeholder)
+  # Lower octave white keys (Z row): C3-B3
+  'z' => {index: 0, black: false, sfx: "c3", hue: 0.00}, # C3
+  'x' => {index: 1, black: false, sfx: "d3", hue: 0.04}, # D3
+  'c' => {index: 2, black: false, sfx: "e3", hue: 0.08}, # E3
+  'v' => {index: 3, black: false, sfx: "f3", hue: 0.12}, # F3
+  'b' => {index: 4, black: false, sfx: "g3", hue: 0.16}, # G3
+  'n' => {index: 5, black: false, sfx: "a3", hue: 0.20}, # A3
+  'm' => {index: 6, black: false, sfx: "b3", hue: 0.24}, # B3
+  # Lower octave black keys (A row)
+  's' => {index: 0, black: true, sfx: "cs3", hue: 0.02}, # C#3
+  'd' => {index: 1, black: true, sfx: "ds3", hue: 0.06}, # D#3
+  'g' => {index: 3, black: true, sfx: "fs3", hue: 0.14}, # F#3
+  'h' => {index: 4, black: true, sfx: "gs3", hue: 0.18}, # G#3
+  'j' => {index: 5, black: true, sfx: "as3", hue: 0.22}, # A#3
+  # Upper octave white keys (Q row): C4-C5
+  'q' => {index: 7, black: false, sfx: "c4", hue: 0.28},  # C4
+  'w' => {index: 8, black: false, sfx: "d4", hue: 0.32},  # D4
+  'e' => {index: 9, black: false, sfx: "e4", hue: 0.36},  # E4
+  'r' => {index: 10, black: false, sfx: "f4", hue: 0.40}, # F4
+  't' => {index: 11, black: false, sfx: "g4", hue: 0.44}, # G4
+  'y' => {index: 12, black: false, sfx: "a4", hue: 0.48}, # A4
+  'u' => {index: 13, black: false, sfx: "b4", hue: 0.52}, # B4
+  'i' => {index: 14, black: false, sfx: "c5", hue: 0.56}, # C5
+  # Upper octave black keys (number row)
+  '2' => {index: 7, black: true, sfx: "cs4", hue: 0.30},  # C#4
+  '3' => {index: 8, black: true, sfx: "ds4", hue: 0.34},  # D#4
+  '5' => {index: 10, black: true, sfx: "fs4", hue: 0.42}, # F#4
+  '6' => {index: 11, black: true, sfx: "gs4", hue: 0.46}, # G#4
+  '7' => {index: 12, black: true, sfx: "as4", hue: 0.50}, # A#4
 }
-
-# Black key positions relative to white keys (before which white key?)
-BLACK_KEY_POSITIONS = [1, 2, 4, 5, 6, 8, 9, 11, 12, 13] # positions after C, D, F, G, A pattern repeated
 
 def has_black_key_after?(white_index : Int32) : Bool
   # Piano pattern: C has black, D has black, E doesn't, F has black, G has black, A has black, B doesn't
@@ -142,6 +151,118 @@ class VisualState
   end
 end
 
+# Reverse mapping: sfx_id -> keyboard char (for auto-play visuals)
+SFX_TO_KEY = begin
+  map = {} of String => Char
+  NOTE_DATA.each do |key, info|
+    map[info[:sfx]] = key unless map.has_key?(info[:sfx])
+  end
+  map
+end
+
+struct ScoreNote
+  getter time : Float64
+  getter sfx : String
+
+  def initialize(@time, @sfx)
+  end
+end
+
+class AutoPlayer
+  getter? playing : Bool
+  @score : Array(ScoreNote)
+  @next_index : Int32 = 0
+  @start_time : Float64 = 0.0
+
+  def initialize(@score : Array(ScoreNote))
+    @playing = false
+  end
+
+  def toggle(now : Float64)
+    if @playing
+      stop
+    else
+      start(now)
+    end
+  end
+
+  def start(now : Float64)
+    @playing = true
+    @next_index = 0
+    @start_time = now
+  end
+
+  def stop
+    @playing = false
+    @next_index = 0
+  end
+
+  def update(now : Float64, sfx : KeySfx, visual : VisualState)
+    return unless @playing
+    elapsed = now - @start_time
+
+    while @next_index < @score.size
+      note = @score[@next_index]
+      break if note.time > elapsed
+
+      sfx.play(note.sfx)
+      key = SFX_TO_KEY[note.sfx]?
+      if key && (info = NOTE_DATA[key]?)
+        visual.spawn_particle(key, info)
+        # Brief visual key press
+        visual.key_down(key)
+      end
+      @next_index += 1
+    end
+
+    # Release auto-pressed keys after a short time
+    # (simple approach: release all auto keys each frame, re-press in spawn)
+
+    if @next_index >= @score.size
+      # Loop: restart
+      @next_index = 0
+      @start_time = now + 2.0 # 2 second pause before repeat
+    end
+  end
+
+  def release_visual_keys(visual : VisualState)
+    return unless @playing
+    SFX_TO_KEY.each_value do |key|
+      visual.key_up(key)
+    end
+  end
+end
+
+def build_gymnopedie_score : Array(ScoreNote)
+  load_score(File.join(SCORES_DIR, "gymnopedie1.json"))
+end
+
+def load_score(path : String) : Array(ScoreNote)
+  data = JSON.parse(File.read(path))
+  notes = data["notes"].as_a.map do |entry|
+    ScoreNote.new(entry["t"].as_f, entry["n"].as_s)
+  end
+  notes.sort_by(&.time)
+rescue ex
+  STDERR.puts "Failed to load score #{path}: #{ex.message}"
+  [] of ScoreNote
+end
+
+def list_scores : Array({String, String})
+  scores = [] of {String, String}
+  return scores unless Dir.exists?(SCORES_DIR)
+  Dir.glob(File.join(SCORES_DIR, "*.json")).sort.each do |path|
+    begin
+      data = JSON.parse(File.read(path))
+      title = data["title"]?.try(&.as_s) || File.basename(path, ".json")
+      scores << {title, path}
+    rescue
+      scores << {File.basename(path, ".json"), path}
+    end
+  end
+  scores
+end
+
 class KeySfx
   @sounds : Hash(String, Raudio::Sound)
 
@@ -151,33 +272,12 @@ class KeySfx
   end
 
   private def load_sounds
-    sound_files = {
-      "c4"  => "key_c4.wav",
-      "cs4" => "key_cs4.wav",
-      "d4"  => "key_d4.wav",
-      "ds4" => "key_ds4.wav",
-      "e4"  => "key_e4.wav",
-      "f4"  => "key_f4.wav",
-      "fs4" => "key_fs4.wav",
-      "g4"  => "key_g4.wav",
-      "gs4" => "key_gs4.wav",
-      "a4"  => "key_a4.wav",
-      "as4" => "key_as4.wav",
-      "b4"  => "key_b4.wav",
-      "c5"  => "key_c5.wav",
-      # Placeholder for notes without files - use closest available
-      "cs5" => "key_c5.wav",
-      "d5"  => "key_c5.wav",
-      "ds5" => "key_c5.wav",
-      "e5"  => "key_c5.wav",
-    }
-
-    sound_files.each do |id, file|
-      path = File.join(ASSETS_DIR, file)
-      if File.exists?(path)
-        @sounds[id] = Raudio::Sound.load(path)
-        @sounds[id].volume = 0.7_f32
-      end
+    # Scan all key_*.wav files from assets directory
+    Dir.glob(File.join(ASSETS_DIR, "key_*.wav")).each do |path|
+      filename = File.basename(path, ".wav")
+      id = filename.lchop("key_")
+      @sounds[id] = Raudio::Sound.load(path)
+      @sounds[id].volume = 0.7_f32
     end
   end
 
@@ -229,6 +329,7 @@ def run_melodica
 
   sfx = KeySfx.new
   visual = VisualState.new
+  auto_player = AutoPlayer.new(build_gymnopedie_score)
 
   window = UIng::Window.new("Melodica", WIN_W, WIN_H, menubar: false)
   box = UIng::Box.new(:vertical, padded: false)
@@ -318,9 +419,14 @@ def run_melodica
       end
 
       # Draw key labels
+      label = if auto_player.playing?
+                "♪ Auto-playing: Gymnopédie No.1  |  SPACE: stop  |  ESC: quit"
+              else
+                "Lower: Z X C V B N M | Upper: Q W E R T Y U I | Black: S D G H J / 2 3 5 6 7 | SPACE: auto | ESC: quit"
+              end
       draw_text(
         ctx,
-        "Keys: A S D F G H J K L ; (white) | W E T Y U O P (black) | ESC to quit",
+        label,
         10.0,
         VISUAL_HEIGHT - 25.0,
         WIN_W.to_f - 20.0,
@@ -345,9 +451,19 @@ def run_melodica
 
       # Key pressed
       if event.ext_key == UIng::Area::ExtKey::Escape
+        auto_player.stop
         UIng.quit
         next true
       end
+
+      if key == ' '
+        auto_player.toggle(visual.time_now)
+        area.queue_redraw_all
+        next true
+      end
+
+      # Stop auto-play if user starts playing manually
+      auto_player.stop if auto_player.playing?
 
       if NOTE_DATA.has_key?(key)
         # Only trigger sound on initial press (not repeat)
@@ -368,8 +484,16 @@ def run_melodica
   box.append(area, stretchy: true)
   window.child = box
 
+  release_counter = 0
   UIng.timer(16) do
     visual.update
+    auto_player.update(visual.time_now, sfx, visual)
+    # Release auto-play visual keys periodically
+    release_counter += 1
+    if release_counter >= 6 # ~100ms
+      auto_player.release_visual_keys(visual)
+      release_counter = 0
+    end
     area.queue_redraw_all
     1
   end
