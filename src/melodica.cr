@@ -251,7 +251,8 @@ end
 def list_scores : Array({String, String})
   scores = [] of {String, String}
   return scores unless Dir.exists?(SCORES_DIR)
-  Dir.glob(File.join(SCORES_DIR, "*.json")).sort.each do |path|
+  pattern = Path[SCORES_DIR, "*.json"].to_posix
+  Dir.glob(pattern).sort.each do |path|
     begin
       data = JSON.parse(File.read(path))
       title = data["title"]?.try(&.as_s) || File.basename(path, ".json")
@@ -273,7 +274,8 @@ class KeySfx
 
   private def load_sounds
     # Scan all key_*.wav files from assets directory
-    Dir.glob(File.join(ASSETS_DIR, "key_*.wav")).each do |path|
+    pattern = Path[ASSETS_DIR, "key_*.wav"].to_posix
+    Dir.glob(pattern).each do |path|
       filename = File.basename(path, ".wav")
       id = filename.lchop("key_")
       @sounds[id] = Raudio::Sound.load(path)
