@@ -14,7 +14,7 @@ dependencies:
   uing:
     github: kojix2/uing
   raudio:
-    github: kojix2/raudio.cr  
+    github: kojix2/raudio.cr
 
 crystal: '>= 1.19.1'
 

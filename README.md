@@ -1,18 +1,21 @@
 # melodica / otoge
 
-Minimal rhythm game prototype using `uing` for UI and `raudio` for audio.
+<p align="center" width="100%">
+<video src="https://github.com/kojix2/melodica/raw/refs/heads/main/assets/gymnopedie.mp4" controls muted playsinline width="720"></video>
+</p>
 
-<video src="assets/gymnopedie.mp4" controls muted playsinline width="720">
-	Your browser does not support the video tag.
-</video>
+Minimal rhythm game prototypes built with Crystal and libui.
 
-[Open video directly](assets/gymnopedie.mp4)
-![MISS!](assets/screenshot.png)
+- `otoge`: 4-lane keyboard rhythm game
+- `melodica`: simple melody/rhythm prototype player
 
-## Usage
+Built with `uing` for UI and `raudio` for audio.
 
-1. Install shards and dependencies.
-2. Run the game:
+If video playback is not available in your GitHub view, use the direct link above.
+
+![Gameplay screenshot](assets/screenshot.png)
+
+## Quick Start
 
 ```bash
 shards
@@ -21,8 +24,6 @@ bin/otoge
 bin/melodica
 ```
 
-Controls:
+## License
 
-- Start: Space
-- Lanes: D F J K
-
+MIT
