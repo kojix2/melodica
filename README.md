@@ -1,7 +1,8 @@
-# otoge
+# melodica / otoge
 
 Minimal rhythm game prototype using `uing` for UI and `raudio` for audio.
 
+![melodica](assets/gymnopedie.mp4)
 ![MISS!](assets/screenshot.png)
 
 ## Usage
@@ -13,6 +14,7 @@ Minimal rhythm game prototype using `uing` for UI and `raudio` for audio.
 shards
 make build release=1
 bin/otoge
+bin/melodica
 ```
 
 Controls:
