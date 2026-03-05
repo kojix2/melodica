@@ -1,8 +1,6 @@
 # melodica / otoge
 
-<p align="center" width="100%">
-<video src="https://github.com/kojix2/melodica/raw/refs/heads/main/assets/gymnopedie.mp4" controls muted playsinline width="720"></video>
-</p>
+<div><video controls src="https://github.com/kojix2/melodica/raw/refs/heads/main/assets/gymnopedie.mp4" muted="false"></video></div>
 
 Minimal rhythm game prototypes built with Crystal and libui.
 
