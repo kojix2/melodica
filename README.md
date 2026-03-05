@@ -2,7 +2,11 @@
 
 Minimal rhythm game prototype using `uing` for UI and `raudio` for audio.
 
-![melodica](assets/gymnopedie.mp4)
+<video src="assets/gymnopedie.mp4" controls muted playsinline width="720">
+	Your browser does not support the video tag.
+</video>
+
+[Open video directly](assets/gymnopedie.mp4)
 ![MISS!](assets/screenshot.png)
 
 ## Usage
